@@ -1,0 +1,115 @@
+name: persian-finance
+
+services:
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: finance_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./backend:/var/www/html
+      - ./backend/storage:/var/www/html/storage
+    networks:
+      - finance_network
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-finance}
+      - DB_USERNAME=${DB_USERNAME:-finance}
+      - DB_PASSWORD=${DB_PASSWORD:-secret}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+      - APP_ENV=${APP_ENV:-local}
+      - APP_KEY=${APP_KEY:-}
+      - APP_URL=${APP_URL:-http://localhost:8000}
+      - SANCTUM_STATEFUL_DOMAINS=${SANCTUM_STATEFUL_DOMAINS:-localhost:3000}
+
+  web:
+    image: nginx:1.25-alpine
+    container_name: finance_nginx
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8000}:80"
+    volumes:
+      - ./backend:/var/www/html:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - finance_network
+    depends_on:
+      - app
+
+  db:
+    image: postgres:15
+    container_name: finance_db
+    restart: unless-stopped
+    volumes:
+      - finance_db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${DB_DATABASE:-finance}
+      - POSTGRES_USER=${DB_USERNAME:-finance}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-secret}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      - finance_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-finance}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: finance_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - finance_redis_data:/data
+    networks:
+      - finance_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nuxt:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: finance_nuxt
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - nuxt_node_modules:/app/node_modules
+    ports:
+      - "${NUXT_PORT:-3000}:3000"
+    networks:
+      - finance_network
+    environment:
+      - NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE:-http://localhost:8000/api}
+      - NODE_ENV=development
+    depends_on:
+      - app
+
+networks:
+  finance_network:
+    driver: bridge
+
+volumes:
+  finance_db_data:
+    driver: local
+  finance_redis_data:
+    driver: local
+  nuxt_node_modules:
+    driver: local

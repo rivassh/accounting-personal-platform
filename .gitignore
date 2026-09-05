@@ -1,0 +1,56 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Secrets / Certs
+nginx/certs/
+data/certbot/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Laravel
+backend/vendor/
+backend/node_modules/
+backend/.phpunit.cache/
+backend/.phpunit.result.cache
+backend/storage/logs/*.log
+backend/storage/framework/cache/data/
+backend/storage/framework/sessions/
+backend/storage/framework/testing/
+backend/storage/framework/views/
+backend/bootstrap/cache/*.php
+!backend/bootstrap/cache/.gitkeep
+backend/public/storage
+backend/public/build
+backend/.env
+backend/auth.json
+backend/composer.phar
+
+# Nuxt
+frontend/node_modules/
+frontend/.nuxt/
+frontend/.output/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# Docker
+.docker/
+*.pid
+
+# Logs
+logs/
+*.log
+
+# Coverage
+coverage/
+*.html
+
+# OS
+Thumbs.db
